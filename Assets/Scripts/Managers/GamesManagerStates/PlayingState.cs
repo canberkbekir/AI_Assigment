@@ -1,5 +1,3 @@
-using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using TMPro;
@@ -20,16 +18,15 @@ using UnityEngine;
 
 public class PlayingState : State
 {
-    List<CharacterController> controllerList;
-    List<Burger> burgerList;
-    CharacterController Kim;
+    [SerializeField] private Transform PlayingUI;
 
-    [SerializeField] Transform PlayingUI;
+    [SerializeField] private TextMeshProUGUI SpeedText;
+    private List<Burger> burgerList;
+    private List<CharacterController> controllerList;
 
-    [SerializeField] TextMeshProUGUI SpeedText;
-    int Speed = 1;
-
-    float GameTime = 0;
+    private float GameTime;
+    private CharacterController Kim;
+    private int Speed = 1;
 
     private void Awake()
     {
@@ -38,6 +35,7 @@ public class PlayingState : State
         controllerList = FindObjectsOfType<CharacterController>(true).ToList();
         burgerList = FindObjectsOfType<Burger>(true).ToList();
     }
+
     public override void EnterState()
     {
         GameTime = 0;
@@ -46,7 +44,7 @@ public class PlayingState : State
         Speed = 1;
         SpeedText.text = ">";
 
-        foreach (CharacterController c in controllerList)
+        foreach (var c in controllerList)
         {
             c.StartCharacter();
 
@@ -72,36 +70,27 @@ public class PlayingState : State
     {
         GameTime += Time.deltaTime;
         if (!Kim) return;
-        foreach (CharacterController c in controllerList)
+        foreach (var c in controllerList)
         {
             c.UpdateCharacter();
 
             if (c != Kim)
             {
-                float dist = Vector3.Distance(c.transform.position, Kim.transform.position);
-                if (dist < 1)
-                {
-                    mySm.ChangeState<OutroState>();
-                }
+                var dist = Vector3.Distance(c.transform.position, Kim.transform.position);
+                if (dist < 1) mySm.ChangeState<OutroState>();
             }
         }
 
-        foreach (Burger b in burgerList)
-        {
+        foreach (var b in burgerList)
             if (b.isActiveAndEnabled)
-            {
                 if (Vector3.Distance(b.transform.position, Kim.transform.position) < 1)
                 {
                     GamesManager.Instance.CollectBurger();
                     b.gameObject.SetActive(false);
                 }
-            }
-        }
 
         if (Vector3.Distance(GamesManager.Instance.myKim.transform.position, Grid.Instance.GetWinPos()) <= 1)
-        {
             mySm.ChangeState<OutroState>();
-        }
     }
 
     public void IncreaseSpeed()
@@ -110,6 +99,6 @@ public class PlayingState : State
         if (Speed > 3) Speed = 1;
         Time.timeScale = Speed;
         SpeedText.text = "";
-        for (int i = 0; i < Speed; i++) SpeedText.text += ">";
+        for (var i = 0; i < Speed; i++) SpeedText.text += ">";
     }
 }

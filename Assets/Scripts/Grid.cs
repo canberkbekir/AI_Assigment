@@ -1,8 +1,7 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using EditorCools;
 using UnityEngine;
-using UnityEngine.UIElements;
 
 // _     __________    _    ______   __   ____ ___  ____  _____           
 //| |   | ____/ ___|  / \  / ___\ \ / /  / ___/ _ \|  _ \| ____|          
@@ -19,85 +18,89 @@ using UnityEngine.UIElements;
 
 public class Grid : MonoBehaviour
 {
-    #region Singleton
-    public static Grid Instance;
-    private void Awake()
+    [SerializeField] private int Width;
+    [SerializeField] private int Height;
+
+    [Range(0.0f, 5.0f)] [SerializeField] private float Spacing;
+
+    [Range(0.0f, 1.0f)] [SerializeField] private float VisualTileSize;
+
+    [Range(0.0f, 1.0f)] [SerializeField] private float AlphaTileSize;
+
+    public bool GeneratedGrid;
+
+    [SerializeField] private Transform FinishTileTrans;
+
+    public List<Tile> tiles = new();
+
+    private void OnDrawGizmos()
     {
-        if (Instance)
-        {
-            Debug.LogError("Grid already exists");
-        }
+        if (GeneratedGrid)
+            foreach (var t in tiles)
+            {
+                if (t.occupied) Gizmos.color = Color.red;
+                else Gizmos.color = Color.green;
+                if (t.finishTile) Gizmos.color = Color.blue;
+
+                AlphaColor();
+                var cubeSize = new Vector3(Spacing * VisualTileSize, 0.1f, Spacing * VisualTileSize);
+
+
+                var cubePos = new Vector3();
+
+                cubePos.x = t.x * Spacing + Spacing / 2.0f;
+                cubePos.z = t.y * Spacing + Spacing / 2.0f;
+
+                Gizmos.DrawWireCube(cubePos + OffsetPos(), cubeSize);
+            }
         else
-        {
-            Instance = this;
-        }
-    }
-    #endregion
+            for (var x = 0; x < Width; x++)
+            for (var y = 0; y < Height; y++)
+            {
+                Gizmos.color = Color.yellow;
+                AlphaColor();
 
-    [SerializeField] int Width;
-    [SerializeField] int Height;
+                var cubeSize = new Vector3(Spacing * VisualTileSize, 0.1f, Spacing * VisualTileSize);
+                var cubePos = new Vector3();
 
-    [Range(0.0f, 5.0f)]
-    [SerializeField] float Spacing;
+                cubePos.x = x * Spacing + Spacing / 2.0f;
+                cubePos.z = y * Spacing + Spacing / 2.0f;
 
-    [Range(0.0f, 1.0f)]
-    [SerializeField] float VisualTileSize;
-
-    [Range(0.0f, 1.0f)]
-    [SerializeField] float AlphaTileSize;
-
-    public bool GeneratedGrid = false;
-
-    [SerializeField] Transform FinishTileTrans = null;
-
-    [Serializable]
-    public class Tile
-    {
-        public int x, y = 0;
-        public bool occupied = false;
-        public bool finishTile = false;
+                Gizmos.DrawWireCube(cubePos + OffsetPos(), cubeSize);
+            }
     }
 
-    public List<Tile> tiles = new List<Tile>();
-
-    [EditorCools.Button]
-    void BakeGrid()
+    [Button]
+    private void BakeGrid()
     {
         ClearGrid();
 
-        for (int x = 0; x < Width; x++)
+        for (var x = 0; x < Width; x++)
+        for (var y = 0; y < Height; y++)
         {
-            for (int y = 0; y < Height; y++)
-            {
+            var t = new Tile();
+            t.x = x;
+            t.y = y;
+            t.occupied = false;
 
-                Tile t = new Tile();
-                t.x = x;
-                t.y = y;
-                t.occupied = false;
+            var cubeSize = new Vector3(Spacing, 0.1f, Spacing);
+            var cubePos = new Vector3();
 
-                Vector3 cubeSize = new Vector3(Spacing, 0.1f, Spacing);
-                Vector3 cubePos = new Vector3();
+            cubePos.x = x * Spacing + Spacing / 2.0f;
+            cubePos.z = y * Spacing + Spacing / 2.0f;
 
-                cubePos.x = (x * Spacing) + Spacing / 2.0f;
-                cubePos.z = (y * Spacing) + Spacing / 2.0f;
+            cubeSize /= 2;
 
-                cubeSize /= 2;
-
-                Collider[] cols = Physics.OverlapBox(cubePos + OffsetPos(), cubeSize);
-                if (cols.Length > 0)
-                {
-                    foreach (Collider c in cols)
+            var cols = Physics.OverlapBox(cubePos + OffsetPos(), cubeSize);
+            if (cols.Length > 0)
+                foreach (var c in cols)
+                    if (c.transform.CompareTag("Obstacle"))
                     {
-                        if (c.transform.CompareTag("Obstacle"))
-                        {
-                            t.occupied = true;
-                            break;
-                        }
+                        t.occupied = true;
+                        break;
                     }
-                }
 
-                tiles.Add(t);
-            }
+            tiles.Add(t);
         }
 
         GetClosest(FinishTileTrans.position).finishTile = true;
@@ -107,20 +110,21 @@ public class Grid : MonoBehaviour
 
     public Tile GetClosest(Tile aTile)
     {
-        float dist = float.MaxValue;
+        var dist = float.MaxValue;
 
-        Vector3 aPosition = WorldPos(aTile);
+        var aPosition = WorldPos(aTile);
 
         Tile returnTile = null;
-        foreach (Tile t in tiles)
+        foreach (var t in tiles)
         {
-            float curDist = Vector3.Distance(aPosition, WorldPos(t));
+            var curDist = Vector3.Distance(aPosition, WorldPos(t));
             if (curDist < dist && !t.occupied && !IsSameTile(t, aTile))
             {
                 dist = curDist;
                 returnTile = t;
             }
         }
+
         return returnTile;
     }
 
@@ -128,24 +132,21 @@ public class Grid : MonoBehaviour
     {
         Tile returnTile = null;
 
-        foreach (Tile t in tiles)
-        {
-            if(t.x == aPos.x && t.y == aPos.y)
+        foreach (var t in tiles)
+            if (t.x == aPos.x && t.y == aPos.y)
             {
                 returnTile = t;
                 break;
             }
-        }
 
         return returnTile;
     }
 
     public Tile GetFinishTile()
     {
-        foreach (Tile t in tiles)
-        {
-            if (t.finishTile) return t;
-        }
+        foreach (var t in tiles)
+            if (t.finishTile)
+                return t;
 
         return null;
     }
@@ -155,102 +156,62 @@ public class Grid : MonoBehaviour
         return tiles;
     }
 
+
     public Tile GetClosest(Vector3 aPosition)
     {
-        float dist = float.MaxValue;
+        var dist = float.MaxValue;
         Tile returnTile = null;
-        foreach (Tile t in tiles)
+        foreach (var t in tiles)
         {
-            float curDist = Vector3.Distance(aPosition, WorldPos(t));
+            var curDist = Vector3.Distance(aPosition, WorldPos(t));
             if (curDist < dist && !t.occupied)
             {
                 dist = curDist;
                 returnTile = t;
             }
         }
+
         return returnTile;
     }
 
-    [EditorCools.Button]
-    void ClearGrid()
+    [Button]
+    private void ClearGrid()
     {
         GeneratedGrid = false;
         tiles.Clear();
     }
 
-    private void OnDrawGizmos()
-    {
-        if (GeneratedGrid)
-        {
-            foreach (Tile t in tiles)
-            {
-                if (t.occupied) Gizmos.color = Color.red; else Gizmos.color = Color.green;
-                if (t.finishTile) Gizmos.color = Color.blue;
-
-                AlphaColor();
-                Vector3 cubeSize = new Vector3(Spacing * VisualTileSize, 0.1f, Spacing * VisualTileSize);
-
-
-                Vector3 cubePos = new Vector3();
-
-                cubePos.x = (t.x * Spacing) + Spacing / 2.0f;
-                cubePos.z = (t.y * Spacing) + Spacing / 2.0f;
-
-                Gizmos.DrawWireCube(cubePos + OffsetPos(), cubeSize);
-            }
-        }
-        else
-        {
-            for (int x = 0; x < Width; x++)
-            {
-                for (int y = 0; y < Height; y++)
-                {
-                    Gizmos.color = Color.yellow;
-                    AlphaColor();
-
-                    Vector3 cubeSize = new Vector3(Spacing * VisualTileSize, 0.1f, Spacing * VisualTileSize);
-                    Vector3 cubePos = new Vector3();
-
-                    cubePos.x = (x * Spacing) + Spacing / 2.0f;
-                    cubePos.z = (y * Spacing) + Spacing / 2.0f;
-
-                    Gizmos.DrawWireCube(cubePos + OffsetPos(), cubeSize);
-                }
-            }
-        }
-    }
-
     public bool isReachable(Tile from, Tile to)
     {
-        Vector3 fromPos = WorldPos(from);
-        Vector3 toPos = WorldPos(to);
+        var fromPos = WorldPos(from);
+        var toPos = WorldPos(to);
 
         return Vector3.Distance(fromPos, toPos) < Spacing * MathF.Sqrt(2.1f);
     }
 
     public Vector3 WorldPos(Tile aTile)
     {
-        Vector3 offset = new Vector3();
+        var offset = new Vector3();
 
-        offset.x = transform.position.x - (Spacing * Width) / 2;
-        offset.z = transform.position.z - (Spacing * Height) / 2;
+        offset.x = transform.position.x - Spacing * Width / 2;
+        offset.z = transform.position.z - Spacing * Height / 2;
         offset.y = transform.position.y;
 
-        Vector3 world = new Vector3();
+        var world = new Vector3();
 
-        world.x = (aTile.x * Spacing) + Spacing / 2.0f;
-        world.z = (aTile.y * Spacing) + Spacing / 2.0f;
+        world.x = aTile.x * Spacing + Spacing / 2.0f;
+        world.z = aTile.y * Spacing + Spacing / 2.0f;
         world.y = 0;
 
         return world + offset;
     }
 
-    Vector3 OffsetPos()
+    private Vector3 OffsetPos()
     {
-        Vector3 offset = new Vector3();
+        var offset = new Vector3();
 
-        offset.x = transform.position.x - (Spacing * Width) / 2;
-        offset.z = transform.position.z - (Spacing * Height) / 2;
+        offset.x = transform.position.x - Spacing * Width / 2;
+        offset.z = transform.position.z - Spacing * Height / 2;
         offset.y = transform.position.y;
 
         return offset;
@@ -258,12 +219,13 @@ public class Grid : MonoBehaviour
 
     public bool IsSameTile(Tile aFirst, Tile aSecond)
     {
-        if (aFirst.x == aSecond.x && aFirst.y == aSecond.y) return true; else return false;
+        if (aFirst.x == aSecond.x && aFirst.y == aSecond.y) return true;
+        return false;
     }
 
-    void AlphaColor()
+    private void AlphaColor()
     {
-        Color gcolor = Gizmos.color;
+        var gcolor = Gizmos.color;
         gcolor.a = AlphaTileSize;
         Gizmos.color = gcolor;
     }
@@ -272,4 +234,46 @@ public class Grid : MonoBehaviour
     {
         return FinishTileTrans.position;
     }
+
+    public List<Tile> GetNeighbours(Tile tile)
+    {
+        var neighbours = new List<Tile>();
+
+        for (var x = -1; x <= 1; x++)
+        for (var y = -1; y <= 1; y++)
+        {
+            if (x == 0 && y == 0)
+                continue;
+
+            var checkX = tile.x + x;
+            var checkY = tile.y + y;
+
+            if (checkX >= 0 && checkX < Width && checkY >= 0 && checkY < Height)
+                neighbours.Add(TryGetTile(new Vector2Int(checkX, checkY)));
+        }
+
+        return neighbours;
+    }
+
+    [Serializable]
+    public class Tile
+    {
+        public int x, y;
+        public bool occupied;
+        public bool finishTile;
+    }
+
+    #region Singleton
+
+    public static Grid Instance;
+
+    private void Awake()
+    {
+        if (Instance)
+            Debug.LogError("Grid already exists");
+        else
+            Instance = this;
+    }
+
+    #endregion
 }
