@@ -10,7 +10,7 @@ namespace Characters
         [SerializeField] private List<Grid.Tile> _burgers = new();
         [SerializeField] private Grid _grid;
         [SerializeField] private int burgerIndex;
-        private readonly HashSet<Grid.Tile> temporarilyOccupiedTiles = new();
+        [SerializeField] private List<Grid.Tile> temporarilyOccupiedTiles = new();
 
         private void Awake()
         {
@@ -39,8 +39,16 @@ namespace Characters
                 GoToNextBurger();
             else
                 GoToBurger(_burgers[burgerIndex]);
+        }
 
-            UnmarkZombieTiles();
+        private void OnDrawGizmos()
+        {
+            foreach (var tile in temporarilyOccupiedTiles)
+            {
+                Debug.Log($"Drawing Gizmo at tile: {tile.x}, {tile.y}");
+                Gizmos.color = Color.yellow;
+                Gizmos.DrawCube(new Vector3(tile.x, tile.y, 0), new Vector3(5, 5, 5));
+            }
         }
 
         private void GetBurgers()
@@ -85,25 +93,22 @@ namespace Characters
 
         private void MarkZombieTiles()
         {
+            var currentZombieTiles = new HashSet<Grid.Tile>();
             var zombies = kim.GetContextByTag("Zombie");
+
             foreach (var zombie in zombies)
             {
                 var zombieTile = _grid.GetClosest(zombie.transform.position);
-                if (zombieTile != null) temporarilyOccupiedTiles.Add(zombieTile);
+                if (zombieTile != null) currentZombieTiles.Add(zombieTile);
             }
 
-            if (temporarilyOccupiedTiles.Any())
-            {
-                Debug.Log("Zombie tiles: " + temporarilyOccupiedTiles.Count);
-                Debug.Log(
-                    "Zombie tiles: " +
-                    string.Join(", ", temporarilyOccupiedTiles.Select(tile => $"{tile.x} {tile.y}")));
-            }
-        }
+            // Remove tiles that are no longer occupied by zombies
+            temporarilyOccupiedTiles.RemoveAll(tile => !currentZombieTiles.Contains(tile));
 
-        private void UnmarkZombieTiles()
-        {
-            temporarilyOccupiedTiles.Clear();
+            // Add new tiles that are now occupied by zombies
+            foreach (var tile in currentZombieTiles)
+                if (!temporarilyOccupiedTiles.Contains(tile))
+                    temporarilyOccupiedTiles.Add(tile);
         }
     }
 }

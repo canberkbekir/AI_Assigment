@@ -38,7 +38,7 @@ RenderSettings:
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
   m_Sun: {fileID: 0}
-  m_IndirectSpecularColor: {r: 0.17792873, g: 0.22277445, b: 0.30490386, a: 1}
+  m_IndirectSpecularColor: {r: 0.17792824, g: 0.22277367, b: 0.30490264, a: 1}
   m_UseRadianceAmbientProbe: 0
 --- !u!157 &3
 LightmapSettings:
@@ -1430,8 +1430,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 149d2a5a9e0058e458815e6f173241b0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _grid: {fileID: 0}
-  Kim: {fileID: 0}
 --- !u!1 &410087039
 GameObject:
   m_ObjectHideFlags: 0
@@ -2043,6 +2041,7 @@ MonoBehaviour:
   _burgers: []
   _grid: {fileID: 0}
   burgerIndex: 0
+  temporarilyOccupiedTiles: []
 --- !u!1 &658337659
 GameObject:
   m_ObjectHideFlags: 0
@@ -17568,6 +17567,11 @@ PrefabInstance:
       propertyPath: myKim
       value: 
       objectReference: {fileID: 601951312}
+    - target: {fileID: 1034124237691063017, guid: 078ac4cfd02656d4eafd0ef44e98033a,
+        type: 3}
+      propertyPath: SkipIntro
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 4601961738845201628, guid: 078ac4cfd02656d4eafd0ef44e98033a,
         type: 3}
       propertyPath: m_LocalPosition.x
